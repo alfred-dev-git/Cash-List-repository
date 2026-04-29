@@ -3,20 +3,38 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../src/store/authStore";
+import { login } from "../../src/services/authService";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const setUser = useAuthStore((state) => state.setUser);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) return;
-    
-    // Sin auth todavía
-    setUser({ username });
-    router.push("/dashboard");
+
+    if (!email.trim() || !password.trim()) return;
+
+    try {
+      const res = await login({
+        email: email, // importante: tu backend usa email
+        password,
+      });
+
+      // guardar usuario en Zustand
+      setUser(res.user);
+
+      // guardar token
+      localStorage.setItem("token", res.token);
+
+      // redirigir
+      router.push("/dashboard");
+
+    } catch (error) {
+      console.error("Error en login:", error);
+      alert("Credenciales inválidas");
+    }
   };
 
   return (
@@ -26,23 +44,23 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold mb-2">Bienvenido</h1>
           <p className="text-gray-500">Ingresá a tu cuenta de Cash List</p>
         </div>
-        
+
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700" htmlFor="username">
-              Usuario
+              Email
             </label>
             <input
-              id="username"
+              id="email"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f5c542] focus:ring-2 focus:ring-[#f5c542]/20 outline-none transition-all duration-200 bg-gray-50/50 focus:bg-white"
               placeholder="tu usuario"
               required
             />
           </div>
-          
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700" htmlFor="password">
               Contraseña
